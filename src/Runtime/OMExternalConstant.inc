@@ -101,7 +101,12 @@ void omMMapBinaryFile(
     /* Prepare to compare-and-swap to setup the shared constAddr.
      * If we fail, another thread beat us so free our mmap.
      */
-    if (!__sync_bool_compare_and_swap(&constAddr[0], NULL, tempAddr))
+    #ifdef __MVS__
+      void *expected = NULL;
+      if (cds((cds_t*)&expected, (cds_t*)&constAddr[0], *(cds_t *)&tempAddr))
+    #else
+      if (!__sync_bool_compare_and_swap(&constAddr[0], NULL, tempAddr))
+    #endif
       munmap(tempAddr, size);
 
     /* Either we succeeded in setting constAddr or someone else did it.
